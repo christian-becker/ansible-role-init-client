@@ -1,2 +1,47 @@
 ---
 # tasks file for init_client
+
+- name: init_client - test python3 and install if needed
+  ansible.builtin.raw: |
+    /usr/bin/env python3 --version
+    if [ $? -ne 0 ]; then
+    DISTRIBUTION="$(cat /etc/os-release | grep -m 1 '^ID=' | cut -d '=' -f2)"
+      case ${DISTRIBUTION} in
+
+        alpine)
+        apk add -U python3
+        ;;
+
+        arch | manjaro)
+        pacman -S --noconfirm python3
+        ;;
+
+        debian | ubuntu | raspbian)
+        apt-get -y update && apt-get install -y python3
+        ;;
+
+        rhel | centos | fedora)
+        dnf install -y python3
+        ;;
+
+        sles | opensuse)
+        zypper install -y python3
+        ;;
+
+        *)
+        echo -n 'SORRY - no automatic installation available!'
+        ;;
+
+      esac
+
+    else
+      echo -n 'OK - python3 is ready to use.'
+    fi
+  register: init_client_result
+
+- name: init_client - INFO from test/install python3
+  ansible.builtin.debug:
+    var: init_client_result
+
+- name: init_client - TEST ansible connection
+  ansible.builtin.ping:
